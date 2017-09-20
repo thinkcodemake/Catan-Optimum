@@ -1,27 +1,68 @@
 from collections import Counter
 import random
 
+resources = ['wood', 'sheep', 'wheat', 'brick', 'ore']
+hit_odds = {
+            0:0,
+            2:(1/36),
+            3:(2/36),
+            4:(3/36),
+            5:(4/36),
+            6:(5/36),
+            8:(5/36),
+            9:(4/36),
+            10:(3/36),
+            11:(2/36),
+            12:(1/36)
+            }
+
+class Player:
+
+    def __init__(self, number):
+        self.number = number
+        self.trade_rates = {'wood':4, 'sheep':4, 'wheat':4, 'brick':4, 'ore':4}
+        self.nodes = []
+
+    def add_port(self, resource):
+        """
+        Add a port.
+
+        :param type: Type of resource for the port.
+        """
+        resource = resource.lower()
+
+        if resource == 'all':
+            for res, rate in self.trade_rates.items():
+                if rate > 3:
+                    self.trade_rates[res] = 3
+        elif resource not in resources:
+            raise Exception
+            # TODO Write a real Exception
+        else:
+            for res, rate in self.trade_rates.items():
+                if res == resource:
+                    continue
+                elif rate > 2:
+                    self.trade_rates[res] = 2
+
+    def reset_ports(self):
+        self.trade_rates = {'wood':4, 'sheep':4, 'wheat':4, 'brick':4, 'ore':4}
 
 class Tile:
 
-    resources = ['wood', 'sheep', 'wheat', 'brick', 'ore']
-    # Number of chances of sum on 2d6 out of 36.
-    hit_odds = {2:1, 3:2, 4:3, 5:4, 6:5, 8:5, 9:4, 10:3, 11:2, 12:1}
-
     def __init__(self, index, resource, chit):
         """
+        :param index: index of the tile on the reference map.
         :param resource: Resource Type of the given tile.
-        :type resource: String description of Resource Type.
         :param chit: Value on the numbered chit.
-        :type chit: Integer
         """
         self.index = index
 
-        if resource != 'desert' and resource.lower() not in Tile.resources:
+        if resource != 'desert' and resource.lower() not in resources:
             raise Exception  # TODO Create valid Exception Type
         self.resource = resource.lower()
 
-        if chit != 0 and chit not in Tile.hit_odds.keys():
+        if chit not in hit_odds.keys():
             raise Exception  # TODO Create valid Exception Type
         self.chit = chit
 
@@ -30,14 +71,12 @@ class Tile:
         """
         Return the given odds that a tile will be hit.
         """
-        if self.chit == 0:
-            return 0
-        return Tile.hit_odds[self.chit] / 36  # 36 total possibilities
+        return hit_odds[self.chit]
 
-    def get_turn_rates(self, trade_rate=4):
+    def get_turn_rates(self, player):
         """
         Return a dictionary of the possible odds on a given turn of each
-        resource.
+        resource for a given player.
 
         :param trade_rate: The rate at which trades on this resource happen.
         :trade_rate type: Number
@@ -47,26 +86,25 @@ class Tile:
 
         resource_odds = {}
 
-        for r in Tile.resources:
+        for r in resources:
             if r == self.resource:
                 resource_odds[r] = 1 * self.odds
             else:
-                resource_odds[r] = (1 / trade_rate) * self.odds
+                resource_odds[r] = (1 / player.trade_rates[r]) * self.odds
 
         return resource_odds
 
 
 class Settlement:
 
-    default_trade_rates = {'wood':4, 'sheep':4, 'wheat':4, 'brick':4, 'ore':4}
 
     def __init__(self, index, tiles):
         self.index = index
         self.tiles = tiles
 
-    def get_turn_rates(self, port_rates=default_trade_rates):
+    def get_turn_rates(self, player):
         """
-        Return the turn rates for each resource.
+        Return the turn rates for each resource for a given player.
         :param port_rates: Dictionary of Resources and Trade Rates
         :param type: dictionary
         """
@@ -74,7 +112,7 @@ class Settlement:
         for tile in self.tiles:
             if tile.resource == 'desert':
                 continue
-            rate = tile.get_turn_rates(port_rates[tile.resource])
+            rate = tile.get_turn_rates(player)
             rates.update(rate)
 
         return rates
@@ -83,7 +121,8 @@ class Settlement:
         """
         Return hit rate for the settlement.
         """
-        return sum(t.odds for t in self.tiles)
+        chits = set(t.chit for t in self.tiles)
+        return sum(hit_odds[chit] for chit in chits)
 
 
 class Board:
