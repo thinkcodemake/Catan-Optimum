@@ -95,7 +95,7 @@ class Tile:
         return resource_odds
 
 
-class Settlement:
+class Node:
 
 
     def __init__(self, index, tiles):
@@ -138,7 +138,7 @@ class Board:
 
     chits = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]
 
-    settlement_i_by_tile_i = [
+    node_i_by_tile_i = [
         (0, 4, 8, 12, 7, 3),
         (1, 5, 9, 13, 8, 4),
         (2, 6, 10, 14, 9, 5),
@@ -189,21 +189,21 @@ class Board:
         :param type: List
         """
         self.tiles = [Tile(i, resource, chit) for i, (resource, chit) in enumerate(tiles)]
-        self.settlements = self.generate_settlements()
+        self.nodes = self.generate_nodes()
 
-    def generate_settlements(self):
+    def generate_nodes(self):
         """
         Return a list of settlements with correct tiles.
         """
         # TODO Add Port Generation to this function
-        settlements = []
+        nodes = []
 
         for i in range(54):
             neighbor_tiles = []
-            for tile_i, settlement_i in enumerate(Board.settlement_i_by_tile_i):
-                if i in settlement_i:
+            for tile_i, node_i in enumerate(Board.node_i_by_tile_i):
+                if i in node_i:
                     neighbor_tiles.append(self.tiles[tile_i])
 
-            settlements.append(Settlement(i, neighbor_tiles))
+            nodes.append(Node(i, neighbor_tiles))
 
-        return settlements
+        return nodes
